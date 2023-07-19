@@ -34,17 +34,37 @@ function decodeState(ledgerBuildings) {
       owner: toHexString(
         new Uint8Array(stateBytes.buffer, structLen * i + 32 * 3, 24)
       ),
-      state: toHexString(
-        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 4, 32)
+      state: Number(
+        BigInt(
+          "0x" +
+            toHexString(
+              new Uint8Array(stateBytes.buffer, structLen * i + 32 * 4, 32)
+            ).slice(-2)
+        )
       ),
-      lastFedBlock: toHexString(
-        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 5, 32)
+      lastFedBlock: Number(
+        BigInt(
+          "0x" +
+            toHexString(
+              new Uint8Array(stateBytes.buffer, structLen * i + 32 * 5, 32)
+            ).slice(-8)
+        )
       ),
-      bornBlock: toHexString(
-        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 6, 32)
+      bornBlock: Number(
+        BigInt(
+          "0x" +
+            toHexString(
+              new Uint8Array(stateBytes.buffer, structLen * i + 32 * 6, 32)
+            ).slice(-8)
+        )
       ),
-      eggNum: toHexString(
-        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 7, 32)
+      eggNum: Number(
+        BigInt(
+          "0x" +
+            toHexString(
+              new Uint8Array(stateBytes.buffer, structLen * i + 32 * 7, 32)
+            ).slice(-8)
+        )
       ),
     });
   }
@@ -80,6 +100,8 @@ export default function update({ selected, world }) {
   const eggs = decodeState(ledgerBuildings);
   const playersEgg = eggs.filter((egg) => egg.owner == selectedMobileUnit.id);
 
+  const BLOCK_TIME_SECS = 10;
+
   // try to detect if the input slots contain enough stuff to craft
   const canCraft =
     selectedMobileUnit &&
@@ -109,11 +131,37 @@ export default function update({ selected, world }) {
     ds.log("EggShop: buy egg");
   };
 
+  const getAliveMinutes = (egg, currentBlock) => {
+    return ((currentBlock - egg.bornBlock) * BLOCK_TIME_SECS) / 60;
+  };
+
+  const getLastFedMinutes = (egg, currentBlock) => {
+    return ((currentBlock - egg.lastFedBlock) * BLOCK_TIME_SECS) / 60;
+  };
+
+  const getEggState = (egg, currentBlock) => {
+    if (egg.lastFedBlock > 0) {
+      const lastFedMinutes = getLastFedMinutes(egg, currentBlock);
+      if (lastFedMinutes > 3) {
+        return "You beast has run away due to being too hungry!";
+      } else if (lastFedMinutes > 1) {
+        return "Your bag beast is hungry, you should feed it before it gets too hungry and runs away.";
+      } else {
+        return "You bag beast is content";
+      }
+    } else {
+      // const aliveMinutes = getAliveMinutes(egg, currentBlock);
+      return "You must build a house for your beast and attend to it";
+    }
+  };
+
   const getMainText = () => {
     if (ledgerBuildings.length == 0) {
       return `<p>Oh no the egg registry office has been destroyed. It must be rebuilt for us to keep record of who has which eggs!</p>`;
     } else {
-      let html = `<p>Eggs sold to date: ${eggs.length}</p>`;
+      let html = "";
+      html += `<p>Current block: ${world.block}</p>`;
+      html += `<p>Eggs sold to date: ${eggs.length}</p>`;
       html += eggs
         .map(
           (egg) =>
@@ -121,10 +169,12 @@ export default function update({ selected, world }) {
         )
         .join("");
       if (playersEgg.length > 0) {
-        html += `<p>Player owns an egg. ID: ${playersEgg[0].eggNum.slice(
-          -2
+        html += `<p>Player owns an egg. ID: ${playersEgg[0].eggNum}</p>`;
+        html += `<p>Minutes alive: ${getAliveMinutes(
+          playersEgg[0],
+          world.block
         )}</p>`;
-        html += `<p>Born block: ${playersEgg[0].bornBlock.slice(-6)}</p>`;
+        html += `<p>${getEggState(playersEgg[0], world.block)}</p>`;
 
         if ((got0 && got0.balance > 0) || (got1 && got1.balance > 0)) {
           html += `<p>You can only own 1 egg at a time. Please take your payment back</p>`;
