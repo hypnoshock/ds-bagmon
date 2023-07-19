@@ -113,8 +113,8 @@ export default function update({ selected, world }) {
     want0.balance == got0.balance &&
     want1 &&
     got1 &&
-    want1.balance == got1.balance; //&&
-  // playersEgg.length == 0;
+    want1.balance == got1.balance &&
+    playersEgg.length == 0;
 
   const craft = () => {
     if (!selectedMobileUnit) {
@@ -182,7 +182,7 @@ export default function update({ selected, world }) {
         html += `<p>${getEggState(playersEgg[0], world.block)}</p>`;
 
         if ((got0 && got0.balance > 0) || (got1 && got1.balance > 0)) {
-          html += `<p>You can only care for one beast at a time, they are very demanding creatures. Please take back your payment</p>`;
+          html += `</br><p>You can only care for one beast at a time, they are very demanding creatures. Please take back your payment</p>`;
         }
       }
 

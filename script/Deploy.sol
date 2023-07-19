@@ -27,7 +27,7 @@ genRandomNumber(8, 10)
 // --rpc-url "http://localhost:8545"
 // --rpc-url "https://network-ds-test.dev.playmint.com"
 
-// BUILDING_KIND_EXTENSION_ID=10578442820450629844 GAME_ADDRESS=0x1D8e3A7Dc250633C192AC1bC9D141E1f95C419AB forge script script/Deploy.sol --broadcast --verify --rpc-url "http://localhost:8545"
+// BUILDING_KIND_EXTENSION_ID=10578442820450629844 GAME_ADDRESS=0x1D8e3A7Dc250633C192AC1bC9D141E1f95C419AB FORCE_HQ_DEPLOY=false forge script script/Deploy.sol --broadcast --verify --rpc-url "http://localhost:8545"
 
 contract Deployer is Script {
     function setUp() public {}
@@ -93,7 +93,7 @@ contract Deployer is Script {
 
         ItemConfig memory stateItemCfg = ItemConfig({
             id: extensionID,
-            name: "Bag Beast State",
+            name: "",
             icon: "26-147",
             greenGoo: 10, //In combat, Green Goo increases life
             blueGoo: 10, //In combat, Blue Goo increases defense
@@ -103,18 +103,17 @@ contract Deployer is Script {
             plugin: ""
         });
 
-        if (address(implementation) != address(0) && !forceRedeploy) {
-            console2.log("Deploy::HQ implementation already deployed");
+        if (address(implementation) == address(0) || forceRedeploy) {
+            console2.log("Deploy::Resetting state");
+            bbStateItem = ItemUtils.register(ds, stateItemCfg);
+            implementation = new HQ();
+        } else {
             uint32[3] memory outputItemAtoms =
                 [uint32(stateItemCfg.greenGoo), uint32(stateItemCfg.blueGoo), uint32(stateItemCfg.redGoo)];
             bbStateItem = Node.Item(uint32(extensionID), outputItemAtoms, stateItemCfg.stackable);
-
-            return (buildingKind, implementation, bbStateItem);
         }
 
         console2.log("Deploy::Registering HQ and state item");
-
-        bbStateItem = ItemUtils.register(ds, stateItemCfg);
 
         // find the base item ids we will use as inputs for our hammer factory
         bytes24 none = 0x0;
@@ -123,7 +122,6 @@ contract Deployer is Script {
         bytes24 flaskRedGoo = ItemUtils.FlaskRedGoo();
 
         // register a new building kind
-        implementation = new HQ();
         buildingKind = BuildingUtils.register(
             ds,
             BuildingConfig({

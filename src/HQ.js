@@ -1,9 +1,7 @@
 import ds from "downstream";
 
-function decodeState(ledgerBuildings) {
-  if (ledgerBuildings.length == 0) return [];
-
-  const base64 = ledgerBuildings[0].kind.outputs[0]?.item?.name?.value;
+function decodeState(stateItem) {
+  const base64 = stateItem?.name?.value;
   if (!base64) return [];
 
   const binaryString = base64_decode(base64);
@@ -78,82 +76,10 @@ export default function update({ selected, world }) {
   const selectedBuilding = selectedTile?.building;
   const selectedMobileUnit = mobileUnit;
 
-  // fetch the expected inputs item kinds
-  const requiredInputs = selectedBuilding?.kind?.inputs || [];
-  const want0 = requiredInputs.find((inp) => inp.key == 0);
-  const want1 = requiredInputs.find((inp) => inp.key == 1);
-
-  // fetch what is currently in the input slots
-  const inputSlots =
-    selectedBuilding?.bags.find((b) => b.key == 0).bag?.slots || [];
-  const got0 = inputSlots?.find((slot) => slot.key == 0);
-  const got1 = inputSlots?.find((slot) => slot.key == 1);
-
-  // fetch our output item details
   const expectedOutputs = selectedBuilding?.kind?.outputs || [];
   const out0 = expectedOutputs?.find((slot) => slot.key == 0);
-
-  const ledgerBuildings = world.buildings.filter(
-    (b) => b.kind?.id == "0xbe92755c0000000000000000000000005aaaaaea7afafa0a"
-  );
-
-  const eggs = decodeState(ledgerBuildings);
-  const playersEgg = eggs.filter((egg) => egg.owner == selectedMobileUnit.id);
-
-  const BLOCK_TIME_SECS = 10;
-
-  // try to detect if the input slots contain enough stuff to craft
-  const canCraft =
-    selectedMobileUnit &&
-    want0 &&
-    got0 &&
-    want0.balance == got0.balance &&
-    want1 &&
-    got1 &&
-    want1.balance == got1.balance &&
-    playersEgg.length == 0;
-
-  const craft = () => {
-    if (!selectedMobileUnit) {
-      ds.log("no unit selected");
-      return;
-    }
-    if (!selectedBuilding) {
-      ds.log("no building selected");
-      return;
-    }
-
-    ds.dispatch({
-      name: "BUILDING_USE",
-      args: [selectedBuilding.id, selectedMobileUnit.id, []],
-    });
-
-    ds.log("EggShop: buy egg");
-  };
-
-  const getAliveMinutes = (egg, currentBlock) => {
-    return ((currentBlock - egg.bornBlock) * BLOCK_TIME_SECS) / 60;
-  };
-
-  const getLastFedMinutes = (egg, currentBlock) => {
-    return ((currentBlock - egg.lastFedBlock) * BLOCK_TIME_SECS) / 60;
-  };
-
-  const getEggState = (egg, currentBlock) => {
-    if (egg.lastFedBlock > 0) {
-      const lastFedMinutes = getLastFedMinutes(egg, currentBlock);
-      if (lastFedMinutes > 3) {
-        return "You beast has run away due to being too hungry!";
-      } else if (lastFedMinutes > 1) {
-        return "Your bag beast is hungry, you should feed it before it gets too hungry and runs away.";
-      } else {
-        return "You bag beast is content";
-      }
-    } else {
-      // const aliveMinutes = getAliveMinutes(egg, currentBlock);
-      return "You must build a house for your beast and attend to it";
-    }
-  };
+  const eggs = decodeState(out0?.item);
+  // const playersEgg = eggs.filter((egg) => egg.owner == selectedMobileUnit.id);
 
   const getMainText = () => {
     return "<p>Visit the shop and buy an egg</p>";
@@ -166,17 +92,8 @@ export default function update({ selected, world }) {
         type: "building",
         id: "BagBeasts-HQ",
         title: "Bag Beasts Headquarters",
-        summary: `We hold a registry of every Bag Beast in Hexwood`,
-        content: [
-          {
-            id: "default",
-            type: "inline",
-            html: `
-            ${getMainText()}
-            `,
-            buttons: [],
-          },
-        ],
+        summary: `We hold a registry of every Bag Beast in Hexwood. ${eggs.length} eggs registered to date.`,
+        content: [],
       },
     ],
   };
