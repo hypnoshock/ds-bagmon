@@ -1,0 +1,208 @@
+import ds from "downstream";
+
+function decodeState(ledgerBuildings) {
+  if (ledgerBuildings.length == 0) return [];
+
+  const base64 = ledgerBuildings[0].kind.outputs[0]?.item?.name?.value;
+  if (!base64) return [];
+
+  const binaryString = base64_decode(base64);
+
+  const stateBytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    stateBytes[i] = binaryString.charCodeAt(i);
+  }
+
+  // TODO: Read all 32 bytes. This will currently break after 255 entries
+  const numEntries = stateBytes[63];
+
+  //   struct EggEntry {
+  //     uint256 index;
+  //     bytes24 owner;
+  //     EggState state;
+  //     uint256 lastFedBlock;
+  //     uint256 bornBlock;
+  //     uint256 eggNum;
+  // }
+  const structLen = 32 * 6;
+  const ledger = [];
+  for (var i = 0; i < numEntries; i++) {
+    ledger.push({
+      index: toHexString(
+        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 2, 32)
+      ),
+      owner: toHexString(
+        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 3, 24)
+      ),
+      state: toHexString(
+        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 4, 32)
+      ),
+      lastFedBlock: toHexString(
+        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 5, 32)
+      ),
+      bornBlock: toHexString(
+        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 6, 32)
+      ),
+      eggNum: toHexString(
+        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 7, 32)
+      ),
+    });
+  }
+
+  return ledger;
+}
+
+export default function update({ selected, world }) {
+  const { tiles, mobileUnit } = selected || {};
+  const selectedTile = tiles && tiles.length === 1 ? tiles[0] : undefined;
+  const selectedBuilding = selectedTile?.building;
+  const selectedMobileUnit = mobileUnit;
+
+  // fetch the expected inputs item kinds
+  const requiredInputs = selectedBuilding?.kind?.inputs || [];
+  const want0 = requiredInputs.find((inp) => inp.key == 0);
+  const want1 = requiredInputs.find((inp) => inp.key == 1);
+
+  // fetch what is currently in the input slots
+  const inputSlots =
+    selectedBuilding?.bags.find((b) => b.key == 0).bag?.slots || [];
+  const got0 = inputSlots?.find((slot) => slot.key == 0);
+  const got1 = inputSlots?.find((slot) => slot.key == 1);
+
+  // fetch our output item details
+  const expectedOutputs = selectedBuilding?.kind?.outputs || [];
+  const out0 = expectedOutputs?.find((slot) => slot.key == 0);
+
+  const ledgerBuildings = world.buildings.filter(
+    (b) => b.kind?.id == "0xbe92755c0000000000000000000000005aaaaaea7afafa0a"
+  );
+
+  const eggs = decodeState(ledgerBuildings);
+  const playersEgg = eggs.filter((egg) => egg.owner == selectedMobileUnit.id);
+
+  // try to detect if the input slots contain enough stuff to craft
+  const canCraft =
+    selectedMobileUnit &&
+    want0 &&
+    got0 &&
+    want0.balance == got0.balance &&
+    want1 &&
+    got1 &&
+    want1.balance == got1.balance &&
+    playersEgg.length == 0;
+
+  const craft = () => {
+    if (!selectedMobileUnit) {
+      ds.log("no unit selected");
+      return;
+    }
+    if (!selectedBuilding) {
+      ds.log("no building selected");
+      return;
+    }
+
+    ds.dispatch({
+      name: "BUILDING_USE",
+      args: [selectedBuilding.id, selectedMobileUnit.id, []],
+    });
+
+    ds.log("EggShop: buy egg");
+  };
+
+  const getMainText = () => {
+    if (ledgerBuildings.length == 0) {
+      return `<p>Oh no the egg registry office has been destroyed. It must be rebuilt for us to keep record of who has which eggs!</p>`;
+    } else {
+      let html = `<p>Eggs sold to date: ${eggs.length}</p>`;
+      html += eggs
+        .map(
+          (egg) =>
+            `<p>idx: ${egg.index.slice(-2)}, owner: ${egg.owner.slice(-6)}</p>`
+        )
+        .join("");
+      if (playersEgg.length > 0) {
+        html += `<p>Player owns an egg. ID: ${playersEgg[0].eggNum.slice(
+          -2
+        )}</p>`;
+        html += `<p>Born block: ${playersEgg[0].bornBlock.slice(-6)}</p>`;
+
+        if ((got0 && got0.balance > 0) || (got1 && got1.balance > 0)) {
+          html += `<p>You can only own 1 egg at a time. Please take your payment back</p>`;
+        }
+      }
+
+      return html;
+    }
+  };
+
+  return {
+    version: 1,
+    components: [
+      {
+        type: "building",
+        id: "BagBeasts-egg-shop",
+        title: "Bag Beasts Egg Shop",
+        summary: `Buy beast eggs here! We hold a strict policy of only allowing one beast per person as they are very demanding creatures.`,
+        content: [
+          {
+            id: "default",
+            type: "inline",
+            html: `
+            ${getMainText()}
+            `,
+            buttons: [
+              {
+                text: "Buy Egg",
+                type: "action",
+                action: craft,
+                disabled: !canCraft,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+// No atob function in quickJS.
+function base64_decode(s) {
+  var base64chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  // remove/ignore any characters not in the base64 characters list
+  //  or the pad character -- particularly newlines
+  s = s.replace(new RegExp("[^" + base64chars.split("") + "=]", "g"), "");
+
+  // replace any incoming padding with a zero pad (the 'A' character is zero)
+  var p =
+    s.charAt(s.length - 1) == "="
+      ? s.charAt(s.length - 2) == "="
+        ? "AA"
+        : "A"
+      : "";
+  var r = "";
+  s = s.substr(0, s.length - p.length) + p;
+
+  // increment over the length of this encoded string, four characters at a time
+  for (var c = 0; c < s.length; c += 4) {
+    // each of these four characters represents a 6-bit index in the base64 characters list
+    //  which, when concatenated, will give the 24-bit number for the original 3 characters
+    var n =
+      (base64chars.indexOf(s.charAt(c)) << 18) +
+      (base64chars.indexOf(s.charAt(c + 1)) << 12) +
+      (base64chars.indexOf(s.charAt(c + 2)) << 6) +
+      base64chars.indexOf(s.charAt(c + 3));
+
+    // split the 24-bit number into the original three 8-bit (ASCII) characters
+    r += String.fromCharCode((n >>> 16) & 255, (n >>> 8) & 255, n & 255);
+  }
+  // remove any zero pad that was added to make this a multiple of 24 bits
+  return r.substring(0, r.length - p.length);
+}
+
+function toHexString(bytes) {
+  const hexString = Array.from(bytes, (byte) => {
+    return ("0" + (byte & 0xff).toString(16)).slice(-2);
+  }).join("");
+  return hexString.length > 0 ? "0x" + hexString : "";
+}
