@@ -93,11 +93,8 @@ export default function update({ selected, world }) {
   const expectedOutputs = selectedBuilding?.kind?.outputs || [];
   const out0 = expectedOutputs?.find((slot) => slot.key == 0);
 
-  // To get the kind ID for the HQ I used https://www.rapidtables.com/convert/number/decimal-to-hex.html to convert the number logged out by the deploy script
   const ledgerBuildings = world.buildings.filter(
-    (b) =>
-      b.kind?.id ==
-      "0xBE92755C00000000000000000000000092CE2DB2BDBDB8D4".toLowerCase()
+    (b) => b.kind?.id == "0xbe92755c0000000000000000000000005aaaaaea7afafa0a"
   );
 
   const eggs = decodeState(ledgerBuildings);
@@ -113,8 +110,8 @@ export default function update({ selected, world }) {
     want0.balance == got0.balance &&
     want1 &&
     got1 &&
-    want1.balance == got1.balance; //&&
-  // playersEgg.length == 0;
+    want1.balance == got1.balance &&
+    playersEgg.length == 0;
 
   const craft = () => {
     if (!selectedMobileUnit) {
@@ -135,13 +132,11 @@ export default function update({ selected, world }) {
   };
 
   const getAliveMinutes = (egg, currentBlock) => {
-    return Math.floor(((currentBlock - egg.bornBlock) * BLOCK_TIME_SECS) / 60);
+    return ((currentBlock - egg.bornBlock) * BLOCK_TIME_SECS) / 60;
   };
 
   const getLastFedMinutes = (egg, currentBlock) => {
-    return Math.floor(
-      ((currentBlock - egg.lastFedBlock) * BLOCK_TIME_SECS) / 60
-    );
+    return ((currentBlock - egg.lastFedBlock) * BLOCK_TIME_SECS) / 60;
   };
 
   const getEggState = (egg, currentBlock) => {
@@ -161,33 +156,7 @@ export default function update({ selected, world }) {
   };
 
   const getMainText = () => {
-    if (ledgerBuildings.length == 0) {
-      return `<p>Oh no the Bag Beast HQ has been destroyed. It must be rebuilt for us to keep record of who has which eggs!</p>`;
-    } else {
-      let html = "";
-      html += `<p>Current block: ${world.block}</p>`;
-      html += `<p>Eggs sold to date: ${eggs.length}</p>`;
-      // html += eggs
-      //   .map(
-      //     (egg) =>
-      //       `<p>idx: ${egg.index.slice(-2)}, owner: ${egg.owner.slice(-6)}</p>`
-      //   )
-      //   .join("");
-      if (playersEgg.length > 0) {
-        html += `<p>You have beast number: ${playersEgg[0].eggNum}</p>`;
-        html += `<p>Minutes alive: ${getAliveMinutes(
-          playersEgg[0],
-          world.block
-        )}</p>`;
-        html += `<p>${getEggState(playersEgg[0], world.block)}</p>`;
-
-        if ((got0 && got0.balance > 0) || (got1 && got1.balance > 0)) {
-          html += `<p>You can only care for one beast at a time, they are very demanding creatures. Please take back your payment</p>`;
-        }
-      }
-
-      return html;
-    }
+    return "<p>Visit the shop and buy an egg</p>";
   };
 
   return {
@@ -195,9 +164,9 @@ export default function update({ selected, world }) {
     components: [
       {
         type: "building",
-        id: "BagBeasts-egg-shop",
-        title: "Bag Beasts Egg Shop",
-        summary: `Buy beast eggs here! We hold a strict policy of only allowing one beast per person as they are very demanding creatures.`,
+        id: "BagBeasts-HQ",
+        title: "Bag Beasts Headquarters",
+        summary: `We hold a registry of every Bag Beast in Hexwood`,
         content: [
           {
             id: "default",
@@ -205,14 +174,7 @@ export default function update({ selected, world }) {
             html: `
             ${getMainText()}
             `,
-            buttons: [
-              {
-                text: "Buy Egg",
-                type: "action",
-                action: craft,
-                disabled: !canCraft,
-              },
-            ],
+            buttons: [],
           },
         ],
       },

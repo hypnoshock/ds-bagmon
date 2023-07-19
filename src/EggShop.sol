@@ -10,6 +10,7 @@ import {State} from "cog/State.sol";
 import {Rel, Schema, Kind, Node} from "@ds/schema/Schema.sol";
 import {Dispatcher} from "cog/Dispatcher.sol";
 import "@ds/utils/Base64.sol";
+import {HQ} from "./HQ.sol";
 
 using Schema for State;
 
@@ -30,78 +31,17 @@ struct EggEntry {
 // string name; // TODO: leaving out for the minute because decoding string annoying in frontend
 
 contract EggShop is BuildingKind {
-    mapping(bytes24 => uint256) public ownerToEggIndex;
-    EggEntry[] public eggs;
-    bytes24 public ledger;
-    uint256 public eggNum;
+    HQ public hq;
 
-    function init(Game ds, bytes24 _ledger) public {
-        if (ledger == bytes24(0)) {
-            require(_ledger != bytes24(0), "EggShop::Init: Cannot set ledger to null");
-
-            console2.log("EggShop::Init: Setting ledger: ", uint256(bytes32(_ledger)));
-            ledger = _ledger;
-
-            // TODO: Restore contract state with the encoded ledger state
-            eggs.push(); // entry 0 is null.
-            _broadcastState(ds.getState());
-        } else {
-            console2.log("EggShop::Init: Ledger already set");
-        }
+    function init(Game ds, HQ _hq) public {
+        hq = _hq;
     }
 
     function use(Game ds, bytes24 buildingInstance, bytes24 mobileUnit, bytes calldata /*payload*/ ) public {
-        // Check the player doesn't already have an egg
-        uint256 eggIndex = ownerToEggIndex[mobileUnit];
-        if (eggIndex > 0) {
-            EggEntry storage egg = eggs[eggIndex];
-            require(egg.owner == bytes24(0) || egg.state == EggState.escaped, "Player cannot own more than one egg");
-        }
-
         State s = ds.getState();
 
-        _createEgg(s, mobileUnit);
+        hq.createEgg(s, mobileUnit);
 
         ds.getDispatcher().dispatch(abi.encodeCall(Actions.CRAFT, (buildingInstance)));
-    }
-
-    function _createEgg(State state, bytes24 mobileUnit) private {
-        eggs.push(
-            EggEntry({
-                index: eggs.length,
-                owner: mobileUnit, // owned directly by mobileUnit NOT player
-                state: EggState.baby,
-                lastFedBlock: 0, // we don't start counting feed times until monster is first fed
-                bornBlock: block.number,
-                // name: "",
-                eggNum: ++eggNum
-            })
-        );
-        ownerToEggIndex[mobileUnit] = eggs.length - 1;
-
-        _broadcastState(state);
-    }
-
-    // -- We might not actually ever delete entries
-    //
-    // function _deleteEntry(EggEntry storage entry) private {
-    //     uint256 index = entry.index;
-    //     require(eggs[index].owner == entry.owner, "Entry to be deleted doesn't match entry at index");
-
-    //     // Delete by swapping the last entry with the entry we want to delete and then deleting the last entry
-    //     eggs[index] = eggs[eggs.length - 1];
-    //     eggs[index].index = index;
-    //     eggs.pop();
-
-    //     // Update mapping
-    //     ownerToEggIndex[eggs[index].owner] = index;
-    //     delete ownerToEggIndex[entry.owner];
-    // }
-
-    function _broadcastState(State state) private {
-        require(ledger != bytes24(0), "Ledger not set, unable to broadcast state");
-
-        // store the state in the name annotation of the ledger ... again, don't judge me (because Farm's did it first)
-        state.annotate(ledger, "name", Base64.encode(abi.encode(eggs)));
     }
 }
