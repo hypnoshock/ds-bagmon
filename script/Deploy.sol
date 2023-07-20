@@ -49,11 +49,12 @@ contract Deployer is Script {
 
         // deploy
         (bytes24 bagBeastHQ, HQ bagBeastHQImpl, bytes24 bbStateItem) = registerHQ(ds, extensionID, forceHQDeploy);
+        bagBeastHQImpl.init(ds, bbStateItem);
 
         // Shop
         bytes24 eggItem = registerEgg(ds, extensionID + 1);
         (bytes24 eggShopKind, EggShop eggShopImpl) = registerEggShop(ds, extensionID + 1, eggItem);
-        eggShopImpl.init(ds, bagBeastHQImpl);
+        eggShopImpl.init(bagBeastHQImpl);
 
         // dump deployed ids
         console2.log("eggItem:", uint192(eggItem));
@@ -146,8 +147,6 @@ contract Deployer is Script {
                 plugin: vm.readFile("src/HQ.js")
             })
         );
-
-        implementation.init(ds, bbStateItem);
     }
 
     // register a new

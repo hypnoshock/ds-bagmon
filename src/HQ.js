@@ -22,7 +22,7 @@ function decodeState(stateItem) {
   //     uint256 bornBlock;
   //     uint256 eggNum;
   // }
-  const structLen = 32 * 6;
+  const structLen = 32 * 7;
   const ledger = [];
   for (var i = 0; i < numEntries; i++) {
     ledger.push({
@@ -63,6 +63,9 @@ function decodeState(stateItem) {
               new Uint8Array(stateBytes.buffer, structLen * i + 32 * 7, 32)
             ).slice(-8)
         )
+      ),
+      house: toHexString(
+        new Uint8Array(stateBytes.buffer, structLen * i + 32 * 8, 24)
       ),
     });
   }

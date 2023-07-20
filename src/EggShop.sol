@@ -33,7 +33,7 @@ struct EggEntry {
 contract EggShop is BuildingKind {
     HQ public hq;
 
-    function init(Game ds, HQ _hq) public {
+    function init(HQ _hq) public {
         hq = _hq;
     }
 

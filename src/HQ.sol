@@ -26,16 +26,20 @@ struct EggEntry {
     uint256 lastFedBlock;
     uint256 bornBlock;
     uint256 eggNum;
+    bytes24 house;
 }
 // string name; // TODO: leaving out for the minute because decoding string annoying in frontend
 
 contract HQ is BuildingKind {
     mapping(bytes24 => uint256) public ownerToEggIndex;
+    // mapping(bytes24 => uint256) public houseToBeastIndex;
+
     EggEntry[] public eggs;
     bytes24 public ledger;
     uint256 public eggNum;
+    bytes24 public beastItem;
 
-    function init(Game ds, bytes24 _ledger) public {
+    function init(Game ds, bytes24 _ledger, bytes24 _beastItem) public {
         if (ledger == bytes24(0)) {
             require(_ledger != bytes24(0), "HQ::Init: Cannot set ledger to null");
 
@@ -47,6 +51,9 @@ contract HQ is BuildingKind {
         } else {
             console2.log("HQ::Init: Ledger already set");
         }
+
+        require(_beastItem != bytes24(0), "HQ::Init: Cannot set beast item to null");
+        beastItem = _beastItem;
     }
 
     function use(Game ds, bytes24 buildingInstance, bytes24 mobileUnit, bytes calldata /*payload*/ ) public {}
@@ -67,11 +74,23 @@ contract HQ is BuildingKind {
                 lastFedBlock: 0, // we don't start counting feed times until monster is first fed
                 bornBlock: block.number,
                 // name: "",
-                eggNum: eggNum++
+                eggNum: eggNum++,
+                house: bytes24(0)
             })
         );
         ownerToEggIndex[mobileUnit] = eggs.length - 1;
 
+        _broadcastState(state);
+    }
+
+    function putBeast(State state, bytes24 houseInstance, bytes24 mobileUnit) public {
+        uint256 eggIndex = ownerToEggIndex[mobileUnit];
+        require(eggIndex > 0, "Beast HQ: No beast registered to supplied mobile unit!");
+
+        EggEntry storage egg = eggs[eggIndex];
+        require(egg.house == bytes24(0), "Beast HQ: Beast already in a house");
+
+        egg.house = houseInstance;
         _broadcastState(state);
     }
 
