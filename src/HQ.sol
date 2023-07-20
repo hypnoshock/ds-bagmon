@@ -25,7 +25,7 @@ struct Beast {
     BeastState state;
     uint256 lastFedBlock;
     uint256 bornBlock;
-    uint256 beastNum;
+    uint256 beastNum; // Not so important anymore as the bag is the ID
     bytes24 house;
 }
 // string name; // TODO: leaving out for the minute because decoding string annoying in frontend

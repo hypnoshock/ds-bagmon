@@ -16,11 +16,12 @@ function decodeState(stateItem) {
 
   //   struct Beast {
   //     uint256 index;
-  //     bytes24 owner;
+  //     bytes24 bag;
   //     BeastState state;
   //     uint256 lastFedBlock;
   //     uint256 bornBlock;
   //     uint256 beastNum;
+  //     bytes24 house;
   // }
   const structLen = 32 * 7;
   const ledger = [];
@@ -29,7 +30,7 @@ function decodeState(stateItem) {
       index: toHexString(
         new Uint8Array(stateBytes.buffer, structLen * i + 32 * 2, 32)
       ),
-      owner: toHexString(
+      bag: toHexString(
         new Uint8Array(stateBytes.buffer, structLen * i + 32 * 3, 24)
       ),
       state: Number(
@@ -82,7 +83,7 @@ export default function update({ selected, world }) {
   const expectedOutputs = selectedBuilding?.kind?.outputs || [];
   const out0 = expectedOutputs?.find((slot) => slot.key == 0);
   const beasts = decodeState(out0?.item);
-  // const playersBeast = beasts.filter((beast) => beast.owner == selectedMobileUnit.id);
+  // const playersBeast = beasts.filter((beast) => beast.bag == selectedMobileUnit.id);
 
   const getMainText = () => {
     return "<p>Visit the shop and buy an beast</p>";

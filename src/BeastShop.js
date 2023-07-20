@@ -20,11 +20,12 @@ function decodeState(ledgerBuildings) {
 
   //   struct Beast {
   //     uint256 index;
-  //     bytes24 owner;
+  //     bytes24 bag;
   //     BeastState state;
   //     uint256 lastFedBlock;
   //     uint256 bornBlock;
-  //     uint256 beastNum;
+  //     uint256 beastNum; // Not so important anymore as the bag is the ID
+  //     bytes24 house;
   // }
   const structLen = 32 * 7;
   const ledger = [];
@@ -33,7 +34,7 @@ function decodeState(ledgerBuildings) {
       index: toHexString(
         new Uint8Array(stateBytes.buffer, structLen * i + 32 * 2, 32)
       ),
-      owner: toHexString(
+      bag: toHexString(
         new Uint8Array(stateBytes.buffer, structLen * i + 32 * 3, 24)
       ),
       state: Number(
@@ -106,8 +107,11 @@ export default function update({ selected, world }) {
   );
 
   const beasts = decodeState(ledgerBuildings);
-  const playersBeast = beasts.filter(
-    (beast) => beast.owner == selectedMobileUnit.id
+  const playersBeasts = beasts.filter(
+    (beast) =>
+      selectedMobileUnit.bags.find(
+        (itemSlot) => itemSlot.bag.id == beast.bag
+      ) != undefined
   );
 
   const BLOCK_TIME_SECS = 10;
@@ -121,7 +125,7 @@ export default function update({ selected, world }) {
     want1 &&
     got1 &&
     want1.balance == got1.balance &&
-    playersBeast.length == 0;
+    playersBeasts.length == 0;
 
   const craft = () => {
     if (!selectedMobileUnit) {
@@ -196,16 +200,16 @@ export default function update({ selected, world }) {
       // html += beasts
       //   .map(
       //     (beast) =>
-      //       `<p>idx: ${beast.index.slice(-2)}, owner: ${beast.owner.slice(-6)}</p>`
+      //       `<p>idx: ${beast.index.slice(-2)}, bag: ${beast.bag.slice(-6)}</p>`
       //   )
       //   .join("");
-      if (playersBeast.length > 0) {
-        html += `<p>You have beast number: ${playersBeast[0].beastNum}</p>`;
+      if (playersBeasts.length > 0) {
+        html += `<p>You have beast number: ${playersBeasts[0].beastNum}</p>`;
         html += `<p>Minutes alive: ${getAliveMinutes(
-          playersBeast[0],
+          playersBeasts[0],
           world.block
         )}</p>`;
-        html += `<p>${getBeastState(playersBeast[0], world.block)}</p>`;
+        html += `<p>${getBeastState(playersBeasts[0], world.block)}</p>`;
 
         if ((got0 && got0.balance > 0) || (got1 && got1.balance > 0)) {
           html += `</br><p>You can only care for one beast at a time, they are very demanding creatures. Please take back your payment</p>`;
