@@ -13,30 +13,30 @@ import "@ds/utils/Base64.sol";
 
 using Schema for State;
 
-enum EggState {
+enum BeastState {
     baby,
     adult,
     escaped
 }
 
-struct EggEntry {
+struct Beast {
     uint256 index;
-    bytes24 owner;
-    EggState state;
+    bytes24 bag;
+    BeastState state;
     uint256 lastFedBlock;
     uint256 bornBlock;
-    uint256 eggNum;
+    uint256 beastNum;
     bytes24 house;
 }
 // string name; // TODO: leaving out for the minute because decoding string annoying in frontend
 
 contract HQ is BuildingKind {
-    mapping(bytes24 => uint256) public ownerToEggIndex;
+    mapping(bytes24 => uint256) public bagToBeastIndex;
     // mapping(bytes24 => uint256) public houseToBeastIndex;
 
-    EggEntry[] public eggs;
+    Beast[] public beasts;
     bytes24 public ledger;
-    uint256 public eggNum;
+    uint256 public beastNum;
     bytes24 public beastItem;
 
     function init(Game ds, bytes24 _ledger, bytes24 _beastItem) public {
@@ -47,7 +47,7 @@ contract HQ is BuildingKind {
             ledger = _ledger;
 
             // Make a null entry for entry 0
-            createEgg(ds.getState(), bytes24(0));
+            registerBeast(ds.getState(), bytes24(0));
         } else {
             console2.log("HQ::Init: Ledger already set");
         }
@@ -58,62 +58,64 @@ contract HQ is BuildingKind {
 
     function use(Game ds, bytes24 buildingInstance, bytes24 mobileUnit, bytes calldata /*payload*/ ) public {}
 
-    function createEgg(State state, bytes24 mobileUnit) public {
-        // Check the player doesn't already have an egg
-        uint256 eggIndex = ownerToEggIndex[mobileUnit];
-        if (eggIndex > 0) {
-            EggEntry storage egg = eggs[eggIndex];
-            require(egg.owner == bytes24(0) || egg.state == EggState.escaped, "Player cannot own more than one egg");
+    function registerBeast(State state, bytes24 mobileUnit) public {
+        // Check the player doesn't already have an beast
+        uint256 beastIndex = bagToBeastIndex[mobileUnit];
+        if (beastIndex > 0) {
+            Beast storage beast = beasts[beastIndex];
+            require(
+                beast.bag == bytes24(0) || beast.state == BeastState.escaped, "Player cannot own more than one beast"
+            );
         }
 
-        eggs.push(
-            EggEntry({
-                index: eggs.length,
-                owner: mobileUnit, // owned directly by mobileUnit NOT player
-                state: EggState.baby,
+        beasts.push(
+            Beast({
+                index: beasts.length,
+                bag: mobileUnit, // owned directly by mobileUnit NOT player
+                state: BeastState.baby,
                 lastFedBlock: 0, // we don't start counting feed times until monster is first fed
                 bornBlock: block.number,
                 // name: "",
-                eggNum: eggNum++,
+                beastNum: beastNum++,
                 house: bytes24(0)
             })
         );
-        ownerToEggIndex[mobileUnit] = eggs.length - 1;
+        bagToBeastIndex[mobileUnit] = beasts.length - 1;
 
         _broadcastState(state);
     }
 
     function putBeast(State state, bytes24 houseInstance, bytes24 mobileUnit) public {
-        uint256 eggIndex = ownerToEggIndex[mobileUnit];
-        require(eggIndex > 0, "Beast HQ: No beast registered to supplied mobile unit!");
+        uint256 beastIndex = bagToBeastIndex[mobileUnit];
+        require(beastIndex > 0, "Beast HQ: No beast registered to supplied mobile unit!");
 
-        EggEntry storage egg = eggs[eggIndex];
-        require(egg.house == bytes24(0), "Beast HQ: Beast already in a house");
+        Beast storage beast = beasts[beastIndex];
+        require(beast.house == bytes24(0), "Beast HQ: Beast already in a house");
 
-        egg.house = houseInstance;
+        beast.house = houseInstance;
         _broadcastState(state);
     }
 
     // -- We might not actually ever delete entries
     //
-    // function _deleteEntry(EggEntry storage entry) private {
+    // function _deleteEntry(Beast storage entry) private {
     //     uint256 index = entry.index;
-    //     require(eggs[index].owner == entry.owner, "Entry to be deleted doesn't match entry at index");
+    //     require(beasts[index].bag == entry.bag, "Entry to be deleted doesn't match entry at index");
 
     //     // Delete by swapping the last entry with the entry we want to delete and then deleting the last entry
-    //     eggs[index] = eggs[eggs.length - 1];
-    //     eggs[index].index = index;
-    //     eggs.pop();
+    //     beasts[index] = beasts[beasts.length - 1];
+    //     beasts[index].index = index;
+    //     beasts.pop();
 
     //     // Update mapping
-    //     ownerToEggIndex[eggs[index].owner] = index;
-    //     delete ownerToEggIndex[entry.owner];
+    //     bagToBeastIndex[beasts[index].bag] = index;
+    //     delete bagToBeastIndex[entry.bag];
     // }
 
     function _broadcastState(State state) private {
         require(ledger != bytes24(0), "Ledger not set, unable to broadcast state");
 
         // store the state in the name annotation of the ledger ... again, don't judge me (because Farm's did it first)
-        state.annotate(ledger, "name", Base64.encode(abi.encode(eggs)));
+        state.annotate(ledger, "name", Base64.encode(abi.encode(beasts)));
     }
 }

@@ -1,5 +1,7 @@
 import ds from "downstream";
 
+const nullBytes24 = "0x000000000000000000000000000000000000000000000000";
+
 function decodeState(ledgerBuildings) {
   if (ledgerBuildings.length == 0) return [];
 
@@ -16,13 +18,13 @@ function decodeState(ledgerBuildings) {
   // TODO: Read all 32 bytes. This will currently break after 255 entries
   const numEntries = stateBytes[63];
 
-  //   struct EggEntry {
+  //   struct Beast {
   //     uint256 index;
   //     bytes24 owner;
-  //     EggState state;
+  //     BeastState state;
   //     uint256 lastFedBlock;
   //     uint256 bornBlock;
-  //     uint256 eggNum;
+  //     uint256 beastNum;
   // }
   const structLen = 32 * 7;
   const ledger = [];
@@ -58,7 +60,7 @@ function decodeState(ledgerBuildings) {
             ).slice(-8)
         )
       ),
-      eggNum: Number(
+      beastNum: Number(
         BigInt(
           "0x" +
             toHexString(
@@ -103,8 +105,10 @@ export default function update({ selected, world }) {
       "0xBE92755C00000000000000000000000092CE2DB2BDBDB8D4".toLowerCase()
   );
 
-  const eggs = decodeState(ledgerBuildings);
-  const playersEgg = eggs.filter((egg) => egg.owner == selectedMobileUnit.id);
+  const beasts = decodeState(ledgerBuildings);
+  const playersBeast = beasts.filter(
+    (beast) => beast.owner == selectedMobileUnit.id
+  );
 
   const BLOCK_TIME_SECS = 10;
 
@@ -117,7 +121,7 @@ export default function update({ selected, world }) {
     want1 &&
     got1 &&
     want1.balance == got1.balance &&
-    playersEgg.length == 0;
+    playersBeast.length == 0;
 
   const craft = () => {
     if (!selectedMobileUnit) {
@@ -129,27 +133,46 @@ export default function update({ selected, world }) {
       return;
     }
 
-    ds.dispatch({
-      name: "BUILDING_USE",
-      args: [selectedBuilding.id, selectedMobileUnit.id, []],
-    });
+    const destEquipSlot = 2;
+    const payload = ds.encodeCall("function USE(uint8 unitDestEquipSlot)", [
+      destEquipSlot,
+    ]);
+    ds.dispatch(
+      {
+        name: "BUILDING_USE",
+        args: [selectedBuilding.id, selectedMobileUnit.id, payload],
+      },
+      {
+        name: "TRANSFER_ITEM_MOBILE_UNIT",
+        args: [
+          selectedMobileUnit.id,
+          [selectedBuilding.id, selectedMobileUnit.id],
+          [1, destEquipSlot],
+          [0, 0],
+          nullBytes24, // toBagId can be null providing there's a bag at destEquipSlot
+          1,
+        ],
+      }
+    );
 
-    ds.log("EggShop: buy egg");
+    ds.log("BeastShop: buy beast");
   };
 
-  const getAliveMinutes = (egg, currentBlock) => {
-    return Math.floor(((currentBlock - egg.bornBlock) * BLOCK_TIME_SECS) / 60);
-  };
-
-  const getLastFedMinutes = (egg, currentBlock) => {
+  const getAliveMinutes = (beast, currentBlock) => {
     return Math.floor(
-      ((currentBlock - egg.lastFedBlock) * BLOCK_TIME_SECS) / 60
+      ((currentBlock - beast.bornBlock) * BLOCK_TIME_SECS) / 60
     );
   };
 
-  const getEggState = (egg, currentBlock) => {
-    if (egg.lastFedBlock > 0) {
-      const lastFedMinutes = getLastFedMinutes(egg, currentBlock);
+  const getLastFedMinutes = (beast, currentBlock) => {
+    return Math.floor(
+      ((currentBlock - beast.lastFedBlock) * BLOCK_TIME_SECS) / 60
+    );
+  };
+
+  const getBeastState = (beast, currentBlock) => {
+    if (beast.lastFedBlock > 0) {
+      const lastFedMinutes = getLastFedMinutes(beast, currentBlock);
       if (lastFedMinutes > 3) {
         return "You beast has run away due to being too hungry!";
       } else if (lastFedMinutes > 1) {
@@ -158,31 +181,31 @@ export default function update({ selected, world }) {
         return "You bag beast is content";
       }
     } else {
-      // const aliveMinutes = getAliveMinutes(egg, currentBlock);
+      // const aliveMinutes = getAliveMinutes(beast, currentBlock);
       return "You must build a house for your beast and attend to it";
     }
   };
 
   const getMainText = () => {
     if (ledgerBuildings.length == 0) {
-      return `<p>Oh no the Bag Beast HQ has been destroyed. It must be rebuilt for us to keep record of who has which eggs!</p>`;
+      return `<p>Oh no the Bag Beast HQ has been destroyed. It must be rebuilt for us to keep record of who has which beasts!</p>`;
     } else {
       let html = "";
       html += `<p>Current block: ${world.block}</p>`;
-      html += `<p>Eggs sold to date: ${eggs.length}</p>`;
-      // html += eggs
+      html += `<p>Beasts sold to date: ${beasts.length}</p>`;
+      // html += beasts
       //   .map(
-      //     (egg) =>
-      //       `<p>idx: ${egg.index.slice(-2)}, owner: ${egg.owner.slice(-6)}</p>`
+      //     (beast) =>
+      //       `<p>idx: ${beast.index.slice(-2)}, owner: ${beast.owner.slice(-6)}</p>`
       //   )
       //   .join("");
-      if (playersEgg.length > 0) {
-        html += `<p>You have beast number: ${playersEgg[0].eggNum}</p>`;
+      if (playersBeast.length > 0) {
+        html += `<p>You have beast number: ${playersBeast[0].beastNum}</p>`;
         html += `<p>Minutes alive: ${getAliveMinutes(
-          playersEgg[0],
+          playersBeast[0],
           world.block
         )}</p>`;
-        html += `<p>${getEggState(playersEgg[0], world.block)}</p>`;
+        html += `<p>${getBeastState(playersBeast[0], world.block)}</p>`;
 
         if ((got0 && got0.balance > 0) || (got1 && got1.balance > 0)) {
           html += `</br><p>You can only care for one beast at a time, they are very demanding creatures. Please take back your payment</p>`;
@@ -198,9 +221,9 @@ export default function update({ selected, world }) {
     components: [
       {
         type: "building",
-        id: "BagBeasts-egg-shop",
-        title: "Bag Beasts Egg Shop",
-        summary: `Buy beast eggs here! We hold a strict policy of only allowing one beast per person as they are very demanding creatures.`,
+        id: "BagBeasts-beast-shop",
+        title: "Bag Beasts Beast Shop",
+        summary: `Buy Bag Beasts here! We hold a strict policy of only allowing one beast per person as they are very demanding creatures.`,
         content: [
           {
             id: "default",
@@ -210,7 +233,7 @@ export default function update({ selected, world }) {
             `,
             buttons: [
               {
-                text: "Buy Egg",
+                text: "Buy Beast",
                 type: "action",
                 action: craft,
                 disabled: !canCraft,

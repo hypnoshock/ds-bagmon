@@ -9,7 +9,7 @@ import {Node, Schema, State} from "@ds/schema/Schema.sol";
 import {ItemUtils, ItemConfig} from "@ds/utils/ItemUtils.sol";
 import {BuildingUtils, BuildingConfig, Material, Input, Output} from "@ds/utils/BuildingUtils.sol";
 import {Dispatcher} from "cog/Dispatcher.sol";
-import {EggShop} from "../src/EggShop.sol";
+import {BeastShop} from "../src/BeastShop.sol";
 import {HQ} from "../src/HQ.sol";
 
 using Schema for State;
@@ -48,17 +48,17 @@ contract Deployer is Script {
         vm.startBroadcast(playerDeploymentKey);
 
         // deploy
+        bytes24 beastItem = registerBeast(ds, extensionID + 1); // extensionID must match the shop's
         (bytes24 bagBeastHQ, HQ bagBeastHQImpl, bytes24 bbStateItem) = registerHQ(ds, extensionID, forceHQDeploy);
-        bagBeastHQImpl.init(ds, bbStateItem);
+        bagBeastHQImpl.init(ds, bbStateItem, beastItem);
 
         // Shop
-        bytes24 eggItem = registerEgg(ds, extensionID + 1);
-        (bytes24 eggShopKind, EggShop eggShopImpl) = registerEggShop(ds, extensionID + 1, eggItem);
-        eggShopImpl.init(bagBeastHQImpl);
+        (bytes24 beastShopKind, BeastShop beastShopImpl) = registerBeastShop(ds, extensionID + 1, beastItem);
+        beastShopImpl.init(bagBeastHQImpl);
 
         // dump deployed ids
-        console2.log("eggItem:", uint192(eggItem));
-        console2.log("eggShopKind:", uint192(eggShopKind));
+        console2.log("beastItem:", uint192(beastItem));
+        console2.log("beastShopKind:", uint192(beastShopKind));
         console2.log("bagBeastHQKind:", uint192(bagBeastHQ));
         console2.log("bagBeastHQImpl:", address(bagBeastHQImpl));
         console2.log("bbStateItem:", uint192(bbStateItem));
@@ -67,12 +67,12 @@ contract Deployer is Script {
     }
 
     // register a new item id
-    function registerEgg(Game ds, uint64 extensionID) public returns (bytes24 itemKind) {
+    function registerBeast(Game ds, uint64 extensionID) public returns (bytes24 itemKind) {
         return ItemUtils.register(
             ds,
             ItemConfig({
                 id: extensionID,
-                name: "Bag Beast Egg",
+                name: "Bag Beast Beast",
                 icon: "26-147",
                 greenGoo: 10, //In combat, Green Goo increases life
                 blueGoo: 10, //In combat, Blue Goo increases defense
@@ -150,9 +150,9 @@ contract Deployer is Script {
     }
 
     // register a new
-    function registerEggShop(Game ds, uint64 extensionID, bytes24 hammer)
+    function registerBeastShop(Game ds, uint64 extensionID, bytes24 hammer)
         public
-        returns (bytes24 buildingKind, EggShop implementation)
+        returns (bytes24 buildingKind, BeastShop implementation)
     {
         // find the base item ids we will use as inputs for our hammer factory
         bytes24 none = 0x0;
@@ -161,12 +161,12 @@ contract Deployer is Script {
         bytes24 flaskRedGoo = ItemUtils.FlaskRedGoo();
 
         // register a new building kind
-        implementation = new EggShop();
+        implementation = new BeastShop();
         buildingKind = BuildingUtils.register(
             ds,
             BuildingConfig({
                 id: extensionID,
-                name: "BagBeasts - Egg Shop",
+                name: "BagBeasts - Beast Shop",
                 materials: [
                     Material({quantity: 10, item: glassGreenGoo}), // these are what it costs to construct the factory
                     Material({quantity: 10, item: beakerBlueGoo}),
@@ -183,7 +183,7 @@ contract Deployer is Script {
                     Output({quantity: 1, item: hammer}) // this is the output that can be crafted given the inputs
                 ],
                 implementation: address(implementation),
-                plugin: vm.readFile("src/EggShop.js")
+                plugin: vm.readFile("src/BeastShop.js")
             })
         );
     }

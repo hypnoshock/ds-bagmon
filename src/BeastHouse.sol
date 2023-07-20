@@ -10,7 +10,7 @@ import {State} from "cog/State.sol";
 import {Rel, Schema, Kind, Node} from "@ds/schema/Schema.sol";
 import {Dispatcher} from "cog/Dispatcher.sol";
 import "@ds/utils/Base64.sol";
-import {HQ, EggEntry, EggState} from "./HQ.sol";
+import {HQ, Beast, BeastState} from "./HQ.sol";
 
 using Schema for State;
 
@@ -31,9 +31,9 @@ contract BeastHouse is BuildingKind {
     function use(Game ds, bytes24 buildingInstance, bytes24 mobileUnit, bytes calldata payload) public {
         require(address(hq) != address(0), "HQ address not set");
 
-        uint256 eggIndex = hq.ownerToEggIndex(mobileUnit);
+        uint256 beastIndex = hq.bagToBeastIndex(mobileUnit);
 
-        require(eggIndex > 0, "You must own a Bag Beast to use this building");
+        require(beastIndex > 0, "You must own a Bag Beast to use this building");
 
         State s = ds.getState();
         // Dispatcher d = ds.getDispatcher();

@@ -14,13 +14,13 @@ function decodeState(stateItem) {
   // TODO: Read all 32 bytes. This will currently break after 255 entries
   const numEntries = stateBytes[63];
 
-  //   struct EggEntry {
+  //   struct Beast {
   //     uint256 index;
   //     bytes24 owner;
-  //     EggState state;
+  //     BeastState state;
   //     uint256 lastFedBlock;
   //     uint256 bornBlock;
-  //     uint256 eggNum;
+  //     uint256 beastNum;
   // }
   const structLen = 32 * 7;
   const ledger = [];
@@ -56,7 +56,7 @@ function decodeState(stateItem) {
             ).slice(-8)
         )
       ),
-      eggNum: Number(
+      beastNum: Number(
         BigInt(
           "0x" +
             toHexString(
@@ -81,11 +81,11 @@ export default function update({ selected, world }) {
 
   const expectedOutputs = selectedBuilding?.kind?.outputs || [];
   const out0 = expectedOutputs?.find((slot) => slot.key == 0);
-  const eggs = decodeState(out0?.item);
-  // const playersEgg = eggs.filter((egg) => egg.owner == selectedMobileUnit.id);
+  const beasts = decodeState(out0?.item);
+  // const playersBeast = beasts.filter((beast) => beast.owner == selectedMobileUnit.id);
 
   const getMainText = () => {
-    return "<p>Visit the shop and buy an egg</p>";
+    return "<p>Visit the shop and buy an beast</p>";
   };
 
   return {
@@ -95,7 +95,7 @@ export default function update({ selected, world }) {
         type: "building",
         id: "BagBeasts-HQ",
         title: "Bag Beasts Headquarters",
-        summary: `We hold a registry of every Bag Beast in Hexwood. ${eggs.length} eggs registered to date.`,
+        summary: `We hold a registry of every Bag Beast in Hexwood. ${beasts.length} beasts registered to date.`,
         content: [],
       },
     ],
