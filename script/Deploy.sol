@@ -73,7 +73,7 @@ contract Deployer is Script {
             ItemConfig({
                 id: extensionID,
                 name: "Bag Beast Beast",
-                icon: "26-147",
+                icon: "28-75", // "26-147",
                 greenGoo: 10, //In combat, Green Goo increases life
                 blueGoo: 10, //In combat, Blue Goo increases defense
                 redGoo: 0, //In combat, Red Goo increases attack
@@ -144,7 +144,7 @@ contract Deployer is Script {
                     Output({quantity: 1, item: bbStateItem}) // this is the output that can be crafted given the inputs
                 ],
                 implementation: address(implementation),
-                plugin: vm.readFile("src/HQ.js")
+                plugin: string.concat(vm.readFile("src/HQ.js"), vm.readFile("src/Helper.js"))
             })
         );
     }
@@ -183,7 +183,7 @@ contract Deployer is Script {
                     Output({quantity: 1, item: hammer}) // this is the output that can be crafted given the inputs
                 ],
                 implementation: address(implementation),
-                plugin: vm.readFile("src/BeastShop.js")
+                plugin: string.concat(vm.readFile("src/BeastShop.js"), vm.readFile("src/Helper.js"))
             })
         );
     }

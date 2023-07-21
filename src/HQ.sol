@@ -19,7 +19,7 @@ enum BeastState {
     escaped
 }
 
-struct Beast {
+struct BeastInfo {
     uint256 index;
     bytes24 bag;
     BeastState state;
@@ -27,6 +27,7 @@ struct Beast {
     uint256 bornBlock;
     uint256 beastNum; // Not so important anymore as the bag is the ID
     bytes24 house;
+    bytes24 housedBy; // mobileUnit
 }
 // string name; // TODO: leaving out for the minute because decoding string annoying in frontend
 
@@ -34,7 +35,7 @@ contract HQ is BuildingKind {
     mapping(bytes24 => uint256) public bagToBeastIndex;
     // mapping(bytes24 => uint256) public houseToBeastIndex;
 
-    Beast[] public beasts;
+    BeastInfo[] public beasts;
     bytes24 public ledger;
     uint256 public beastNum;
     bytes24 public beastItem;
@@ -62,14 +63,14 @@ contract HQ is BuildingKind {
         // Check the player doesn't already have an beast
         uint256 beastIndex = bagToBeastIndex[mobileUnit];
         if (beastIndex > 0) {
-            Beast storage beast = beasts[beastIndex];
+            BeastInfo storage beast = beasts[beastIndex];
             require(
                 beast.bag == bytes24(0) || beast.state == BeastState.escaped, "Player cannot own more than one beast"
             );
         }
 
         beasts.push(
-            Beast({
+            BeastInfo({
                 index: beasts.length,
                 bag: mobileUnit, // owned directly by mobileUnit NOT player
                 state: BeastState.baby,
@@ -77,7 +78,8 @@ contract HQ is BuildingKind {
                 bornBlock: block.number,
                 // name: "",
                 beastNum: beastNum++,
-                house: bytes24(0)
+                house: bytes24(0),
+                housedBy: bytes24(0)
             })
         );
         bagToBeastIndex[mobileUnit] = beasts.length - 1;
@@ -85,14 +87,43 @@ contract HQ is BuildingKind {
         _broadcastState(state);
     }
 
-    function putBeast(State state, bytes24 houseInstance, bytes24 mobileUnit) public {
-        uint256 beastIndex = bagToBeastIndex[mobileUnit];
-        require(beastIndex > 0, "Beast HQ: No beast registered to supplied mobile unit!");
+    function getBeastInfo(bytes24 bagBeast) external view returns (BeastInfo memory) {
+        uint256 beastIndex = bagToBeastIndex[bagBeast];
+        require(beastIndex > 0, "Beast HQ: No beast exists with supplied bag ID");
 
-        Beast storage beast = beasts[beastIndex];
+        return beasts[beastIndex];
+    }
+
+    function putBeast(State state, bytes24 bagBeast, bytes24 houseInstance, bytes24 mobileUnit) public {
+        // TODO: check this was called by the implementation
+        // require(caller == getImpl(houseInstance), "Beast HQ: can only be called by Beast House");
+
+        uint256 beastIndex = bagToBeastIndex[bagBeast];
+        require(beastIndex > 0, "Beast HQ: No beast exists with supplied bag ID");
+
+        BeastInfo storage beast = beasts[beastIndex];
         require(beast.house == bytes24(0), "Beast HQ: Beast already in a house");
 
         beast.house = houseInstance;
+        beast.housedBy = mobileUnit;
+
+        _broadcastState(state);
+    }
+
+    function collectBeast(State state, bytes24 bagBeast, bytes24 houseInstance, bytes24 mobileUnit) public {
+        // TODO: check this was called by the implementation
+        // require(caller == getImpl(houseInstance), "Beast HQ: can only be called by Beast House");
+
+        uint256 beastIndex = bagToBeastIndex[bagBeast];
+        require(beastIndex > 0, "Beast HQ: No beast exists with supplied bag ID");
+
+        BeastInfo storage beast = beasts[beastIndex];
+        require(beast.house == houseInstance, "Beast HQ: Beast not at supplied house ID");
+        require(beast.housedBy == mobileUnit, "Beast HQ: Beast can only be collected by unit that put beast");
+
+        beast.house = bytes24(0);
+        beast.housedBy = bytes24(0);
+
         _broadcastState(state);
     }
 
