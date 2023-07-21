@@ -11,6 +11,7 @@ import {BuildingUtils, BuildingConfig, Material, Input, Output} from "@ds/utils/
 import {Dispatcher} from "cog/Dispatcher.sol";
 import {BeastShop} from "../src/BeastShop.sol";
 import {HQ} from "../src/HQ.sol";
+import {BeastHouse} from "../src/BeastHouse.sol";
 
 using Schema for State;
 
@@ -56,12 +57,17 @@ contract Deployer is Script {
         (bytes24 beastShopKind, BeastShop beastShopImpl) = registerBeastShop(ds, extensionID + 1, beastItem);
         beastShopImpl.init(bagBeastHQImpl);
 
+        // House
+        (bytes24 beastHouseKind, BeastHouse beastHouseImpl) = registerBeastHouse(ds, extensionID + 2);
+        beastHouseImpl.init(bagBeastHQImpl);
+
         // dump deployed ids
         console2.log("beastItem:", uint192(beastItem));
         console2.log("beastShopKind:", uint192(beastShopKind));
         console2.log("bagBeastHQKind:", uint192(bagBeastHQ));
         console2.log("bagBeastHQImpl:", address(bagBeastHQImpl));
         console2.log("bbStateItem:", uint192(bbStateItem));
+        console2.log("beastHouseKind:", uint192(beastHouseKind));
 
         vm.stopBroadcast();
     }
@@ -72,7 +78,7 @@ contract Deployer is Script {
             ds,
             ItemConfig({
                 id: extensionID,
-                name: "Bag Beast Beast",
+                name: "Bag Beast",
                 icon: "28-75", // "26-147",
                 greenGoo: 10, //In combat, Green Goo increases life
                 blueGoo: 10, //In combat, Blue Goo increases defense
@@ -184,6 +190,44 @@ contract Deployer is Script {
                 ],
                 implementation: address(implementation),
                 plugin: string.concat(vm.readFile("src/BeastShop.js"), vm.readFile("src/Helper.js"))
+            })
+        );
+    }
+
+    function registerBeastHouse(Game ds, uint64 extensionID)
+        public
+        returns (bytes24 buildingKind, BeastHouse implementation)
+    {
+        // find the base item ids we will use as inputs for our hammer factory
+        bytes24 none = 0x0;
+        bytes24 glassGreenGoo = ItemUtils.GlassGreenGoo();
+        bytes24 beakerBlueGoo = ItemUtils.BeakerBlueGoo();
+        bytes24 flaskRedGoo = ItemUtils.FlaskRedGoo();
+
+        // register a new building kind
+        implementation = new BeastHouse();
+        buildingKind = BuildingUtils.register(
+            ds,
+            BuildingConfig({
+                id: extensionID,
+                name: "BagBeasts - Beast House",
+                materials: [
+                    Material({quantity: 10, item: glassGreenGoo}), // these are what it costs to construct the factory
+                    Material({quantity: 10, item: beakerBlueGoo}),
+                    Material({quantity: 10, item: flaskRedGoo}),
+                    Material({quantity: 0, item: none})
+                ],
+                inputs: [
+                    Input({quantity: 0, item: none}), // these are required inputs to get the output
+                    Input({quantity: 0, item: none}),
+                    Input({quantity: 0, item: none}),
+                    Input({quantity: 0, item: none})
+                ],
+                outputs: [
+                    Output({quantity: 0, item: none}) // this is the output that can be crafted given the inputs
+                ],
+                implementation: address(implementation),
+                plugin: string.concat(vm.readFile("src/BeastHouse.js"), vm.readFile("src/Helper.js"))
             })
         );
     }

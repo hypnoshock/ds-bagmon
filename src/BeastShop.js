@@ -1,7 +1,5 @@
 import ds from "downstream";
 
-const nullBytes24 = "0x000000000000000000000000000000000000000000000000";
-
 export default function update({ selected, world }) {
   const { tiles, mobileUnit } = selected || {};
   const selectedTile = tiles && tiles.length === 1 ? tiles[0] : undefined;
@@ -33,8 +31,6 @@ export default function update({ selected, world }) {
         (itemSlot) => itemSlot.bag.id == beast.bag
       ) != undefined
   );
-
-  const BLOCK_TIME_SECS = 10;
 
   // try to detect if the input slots contain enough stuff to craft
   const canCraft =
@@ -80,18 +76,6 @@ export default function update({ selected, world }) {
     );
 
     ds.log("BeastShop: buy beast");
-  };
-
-  const getAliveMinutes = (beast, currentBlock) => {
-    return Math.floor(
-      ((currentBlock - beast.bornBlock) * BLOCK_TIME_SECS) / 60
-    );
-  };
-
-  const getLastFedMinutes = (beast, currentBlock) => {
-    return Math.floor(
-      ((currentBlock - beast.lastFedBlock) * BLOCK_TIME_SECS) / 60
-    );
   };
 
   const getBeastState = (beast, currentBlock) => {
@@ -146,7 +130,7 @@ export default function update({ selected, world }) {
       {
         type: "building",
         id: "BagBeasts-beast-shop",
-        title: "Bag Beasts Beast Shop",
+        title: "Bag Beast Shop",
         summary: `Buy Bag Beasts here! We hold a strict policy of only allowing one beast per person as they are very demanding creatures.`,
         content: [
           {

@@ -1,3 +1,6 @@
+const BLOCK_TIME_SECS = 10;
+const nullBytes24 = "0x000000000000000000000000000000000000000000000000";
+
 function getHQ(world) {
   // To get the kind ID for the HQ I used https://www.rapidtables.com/convert/number/decimal-to-hex.html to convert the number logged out by the deploy script
   return world.buildings.find(
@@ -15,6 +18,16 @@ function getPlayerBeasts(beasts) {
       ) != undefined
   );
 }
+
+const getAliveMinutes = (beast, currentBlock) => {
+  return Math.floor(((currentBlock - beast.bornBlock) * BLOCK_TIME_SECS) / 60);
+};
+
+const getLastFedMinutes = (beast, currentBlock) => {
+  return Math.floor(
+    ((currentBlock - beast.lastFedBlock) * BLOCK_TIME_SECS) / 60
+  );
+};
 
 function decodeState(stateItem) {
   const base64 = stateItem?.name?.value;

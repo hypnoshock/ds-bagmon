@@ -34,7 +34,7 @@ contract BeastHouse is BuildingKind {
         if (bytes4(payload) == HouseActions.PUT.selector) {
             (bytes24 bagBeast) = abi.decode(payload[4:], (bytes24));
 
-            _put(ds, bagBeast, buildingInstance, mobileUnit, 0);
+            _put(ds, bagBeast, buildingInstance, mobileUnit);
         }
 
         if (bytes4(payload) == HouseActions.COLLECT.selector) {
@@ -44,17 +44,13 @@ contract BeastHouse is BuildingKind {
         }
     }
 
-    function _put(Game ds, bytes24 bagBeast, bytes24 buildingInstance, bytes24 mobileUnit, uint8 destEquipSlot)
-        private
-    {
+    function _put(Game ds, bytes24 bagBeast, bytes24 buildingInstance, bytes24 mobileUnit) private {
         State s = ds.getState();
-        Dispatcher d = ds.getDispatcher();
+        // Dispatcher d = ds.getDispatcher();
 
-        // TODO: Check that if a beast is in this house, if they are still alive
-        bytes24 housedBeast = s.getEquipSlot(buildingInstance, 0);
-        require(housedBeast == bytes24(0), "There is already a beast in this house");
+        bytes24 housedBeast = s.getEquipSlot(buildingInstance, 2);
+        require(housedBeast == bagBeast, "Beast requested for put didn't match beast in house");
 
-        d.dispatch(abi.encodeCall(Actions.TRANSFER_BAG, (bagBeast, mobileUnit, buildingInstance, destEquipSlot)));
         hq.putBeast(s, bagBeast, buildingInstance, mobileUnit);
     }
 
@@ -64,9 +60,8 @@ contract BeastHouse is BuildingKind {
         State s = ds.getState();
         Dispatcher d = ds.getDispatcher();
 
-        // TODO: Check that if a beast is in this house, if they are still alive
-        bytes24 housedBeast = s.getEquipSlot(buildingInstance, 0);
-        require(housedBeast == bytes24(0), "There is already a beast in this house");
+        bytes24 housedBeast = s.getEquipSlot(buildingInstance, 2);
+        require(housedBeast == bagBeast, "Beast requested for collection doesn't match beast in house");
 
         d.dispatch(abi.encodeCall(Actions.TRANSFER_BAG, (bagBeast, buildingInstance, mobileUnit, destEquipSlot)));
         hq.collectBeast(s, bagBeast, buildingInstance, mobileUnit);
