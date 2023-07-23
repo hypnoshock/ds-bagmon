@@ -42,6 +42,12 @@ contract BeastHouse is BuildingKind {
 
             _collect(ds, bagBeast, buildingInstance, mobileUnit, 2);
         }
+
+        if (bytes4(payload) == HouseActions.FEED.selector) {
+            (bytes24 bagBeast) = abi.decode(payload[4:], (bytes24));
+
+            _feed(ds, bagBeast, buildingInstance, mobileUnit);
+        }
     }
 
     function _put(Game ds, bytes24 bagBeast, bytes24 buildingInstance, bytes24 mobileUnit) private {
@@ -52,6 +58,16 @@ contract BeastHouse is BuildingKind {
         require(housedBeast == bagBeast, "Beast requested for put didn't match beast in house");
 
         hq.putBeast(s, bagBeast, buildingInstance, mobileUnit);
+    }
+
+    function _feed(Game ds, bytes24 bagBeast, bytes24 buildingInstance, bytes24 mobileUnit) private {
+        State s = ds.getState();
+        // Dispatcher d = ds.getDispatcher();
+
+        bytes24 housedBeast = s.getEquipSlot(buildingInstance, 2);
+        require(housedBeast == bagBeast, "Beast doesn't match beast in house");
+
+        hq.feedBeast(s, bagBeast, buildingInstance, mobileUnit);
     }
 
     function _collect(Game ds, bytes24 bagBeast, bytes24 buildingInstance, bytes24 mobileUnit, uint8 destEquipSlot)

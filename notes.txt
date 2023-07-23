@@ -1,0 +1,3 @@
+https://angrytools.com/css/animation/
+
+cat shop-keepers.png | base64 > shop-keepers.png.txt

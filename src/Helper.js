@@ -1,4 +1,5 @@
 const BLOCK_TIME_SECS = 10;
+const HUNGER_MINS = 3;
 const nullBytes24 = "0x000000000000000000000000000000000000000000000000";
 
 function getHQ(world) {
@@ -27,6 +28,14 @@ const getLastFedMinutes = (beast, currentBlock) => {
   return Math.floor(
     ((currentBlock - beast.lastFedBlock) * BLOCK_TIME_SECS) / 60
   );
+};
+
+const getHappiness = (lastFedMins) => {
+  return lastFedMins < HUNGER_MINS ? "happy" : "sad";
+};
+
+const getIsEating = (lastFedMins) => {
+  return lastFedMins < 1 ? "isEating" : "";
 };
 
 function decodeState(stateItem) {

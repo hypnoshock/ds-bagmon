@@ -74,7 +74,7 @@ contract HQ is BuildingKind {
                 index: beasts.length,
                 bag: mobileUnit, // owned directly by mobileUnit NOT player
                 state: BeastState.baby,
-                lastFedBlock: 0, // we don't start counting feed times until monster is first fed
+                lastFedBlock: block.number,
                 bornBlock: block.number,
                 // name: "",
                 beastNum: beastNum++,
@@ -95,7 +95,7 @@ contract HQ is BuildingKind {
     }
 
     function putBeast(State state, bytes24 bagBeast, bytes24 houseInstance, bytes24 mobileUnit) public {
-        // TODO: check this was called by the implementation
+        // TODO: check this was called by the house implementation
         // require(caller == getImpl(houseInstance), "Beast HQ: can only be called by Beast House");
 
         uint256 beastIndex = bagToBeastIndex[bagBeast];
@@ -111,7 +111,7 @@ contract HQ is BuildingKind {
     }
 
     function collectBeast(State state, bytes24 bagBeast, bytes24 houseInstance, bytes24 mobileUnit) public {
-        // TODO: check this was called by the implementation
+        // TODO: check this was called by the house implementation
         // require(caller == getImpl(houseInstance), "Beast HQ: can only be called by Beast House");
 
         uint256 beastIndex = bagToBeastIndex[bagBeast];
@@ -123,6 +123,22 @@ contract HQ is BuildingKind {
 
         beast.house = bytes24(0);
         beast.housedBy = bytes24(0);
+
+        _broadcastState(state);
+    }
+
+    function feedBeast(State state, bytes24 bagBeast, bytes24 houseInstance, bytes24 /*mobileUnit*/ ) public {
+        // TODO: check this was called by the house implementation
+        // require(caller == getImpl(houseInstance), "Beast HQ: can only be called by Beast House");
+
+        uint256 beastIndex = bagToBeastIndex[bagBeast];
+        require(beastIndex > 0, "Beast HQ: No beast exists with supplied bag ID");
+
+        BeastInfo storage beast = beasts[beastIndex];
+        require(beast.house == houseInstance, "Beast HQ: Beast not at supplied house ID");
+        // NOTE: Beast can be fed by anyone.
+
+        beast.lastFedBlock = block.number;
 
         _broadcastState(state);
     }
