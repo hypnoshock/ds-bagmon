@@ -93,8 +93,9 @@ export default function update({ selected, world }) {
       if (houseBeasts.length > 0) {
         html += `
         <p>Beast number: ${houseBeasts[0].beastNum}</p>
+        <p>Color: ${houseBeasts[0].beastColor}</p>
         <p>Beast is ${aliveMins} minutes old</p>
-        <p>Beast was las fed ${lastFedMins} minutes ago</p>
+        <p>Beast was last fed ${lastFedMins} minutes ago</p>
         ${getBeastGfx(houseBeasts[0], aliveMins, lastFedMins)}
         `;
       }
@@ -169,8 +170,17 @@ const getBeastBtns = (bagBeast, aliveMins, lastFedMins) => {
 };
 
 const getBeastStyleOverride = (bagBeast) => {
+  const mainColor = BigInt(bagBeast.beastColor);
+  const r = Number((mainColor >> 16n) & 255n);
+  const g = Number((mainColor >> 8n) & 255n);
+  const b = Number(mainColor & 255n);
+
+  // const darkHSV = rgb2hsl(Number(r), Number(g), Number(b));
+  // darkHSV[2] *= 0.2;
+  // const darkRGB = hsl2rgb(darkHSV[0], darkHSV[1], darkHSV[2]);
+
   const color1 = `#000000`;
-  const color2 = `#303030`;
+  const color2 = bagBeast.beastColor.replace("0x", "#");
   const color3 = `#a0a0a0`;
 
   return `
@@ -401,7 +411,7 @@ const getBeastGfx = (bagBeast, aliveMins, lastFedMins) => {
     <path class="cls-3" d="m67.06.5C45.44.5,27.91,12.61,27.91,27.55c0,7.09,3.95,13.53,10.4,18.36-2.37-16.95,7.21-35.87,28.75-36.79,16.16,0,29.26,14.2,29.26,31.72,0,1.69-.12,3.34-.36,4.96,6.36-4.81,10.24-11.21,10.24-18.24C106.21,12.61,88.68.5,67.06.5Z"/>
   </g>
   <g id="background">
-    <ellipse id="body" class="cls-3" cx="66.37" cy="80.77" rx="65.87" ry="48.69"/>
+  <path id="body" class="cls-3" d="m132.24,80.77c0,22.15,0,34.22-6.2,40.8-7.42,7.89-22.54,7.46-51.51,7.89-3.32.05-5.69.03-8.16,0-34.48-.34-52.23.01-59.67-7.89C.5,114.99.5,102.92.5,80.77c0-26.89,29.49-48.69,65.87-48.69s65.87,21.8,65.87,48.69Z"/>
     <ellipse id="face" class="cls-2" cx="66.37" cy="80.77" rx="49.13" ry="39.38"/>
   </g>
   <g id="mouthLayer">

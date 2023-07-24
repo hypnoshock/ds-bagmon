@@ -14,24 +14,8 @@ import {HQ} from "./HQ.sol";
 
 using Schema for State;
 
-enum BeastState {
-    baby,
-    adult,
-    escaped
-}
-
-struct Beast {
-    uint256 index;
-    bytes24 owner;
-    BeastState state;
-    uint256 lastFedBlock;
-    uint256 bornBlock;
-    uint256 beastNum;
-}
-// string name; // TODO: leaving out for the minute because decoding string annoying in frontend
-
 interface buildingActions {
-    function USE(uint8 unitDestEquipSlot) external;
+    function USE(uint8 unitDestEquipSlot, uint24 beastColor) external;
 }
 
 contract BeastShop is BuildingKind {
@@ -47,7 +31,7 @@ contract BeastShop is BuildingKind {
         State s = ds.getState();
         Dispatcher d = ds.getDispatcher();
 
-        (uint8 unitDestEquipSlot) = abi.decode(payload[4:], (uint8));
+        (uint8 unitDestEquipSlot, uint24 beastColor) = abi.decode(payload[4:], (uint8, uint24));
 
         // Empty slot must be declared
         require(s.getEquipSlot(mobileUnit, unitDestEquipSlot) == bytes24(0), "Destination equip slot must be empty");
@@ -57,7 +41,7 @@ contract BeastShop is BuildingKind {
         bytes24 bagBeast = s.getEquipSlot(buildingInstance, BAG_BEAST_SLOT);
 
         // registering the bag as the beast
-        hq.registerBeast(s, bagBeast);
+        hq.registerBeast(s, bagBeast, beastColor);
 
         d.dispatch(abi.encodeCall(Actions.CRAFT, (buildingInstance)));
 

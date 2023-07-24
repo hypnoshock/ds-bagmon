@@ -43,7 +43,9 @@ export default function update({ selected, world }) {
     want1.balance == got1.balance &&
     playersBeasts.length == 0;
 
-  const craft = () => {
+  const adopt = (values) => {
+    const beastColor = values["beastColor"];
+
     if (!selectedMobileUnit) {
       ds.log("no unit selected");
       return;
@@ -53,10 +55,16 @@ export default function update({ selected, world }) {
       return;
     }
 
+    ds.log("Adopting with color: " + beastColor);
+
+    // return;
+
     const destEquipSlot = 2;
-    const payload = ds.encodeCall("function USE(uint8 unitDestEquipSlot)", [
-      destEquipSlot,
-    ]);
+    const payload = ds.encodeCall(
+      "function USE(uint8 unitDestEquipSlot, uint24 color)",
+      [destEquipSlot, beastColor]
+    );
+
     ds.dispatch(
       {
         name: "BUILDING_USE",
@@ -103,7 +111,18 @@ export default function update({ selected, world }) {
     } else {
       let html = "";
       if (playersBeasts.length == 0) {
-        html = `<p>We have many beasts at this shop and I can help you find the best best that suits you.</p>`;
+        html = `
+          <p>We have many beasts at this shop and I can help you find the beast that suits you</p>
+          <p>Select your favourite colour</p>
+          <select id="beastColor" name="beastColor">
+            <option value="0xFF0000">Red</option>
+            <option value="0x00FF00">Green</option>
+            <option value="0x0000FF">Blue</option>
+          </select>
+          <button class="action-button" ${
+            !canCraft ? `disabled` : ``
+          }>Adopt Beast</button>
+        `;
       } else {
         html += `<p>You have beast number: ${playersBeasts[0].beastNum}</p>`;
         html += `<p>Minutes alive: ${getAliveMinutes(
@@ -128,7 +147,7 @@ export default function update({ selected, world }) {
         type: "building",
         id: "BagBeasts-beast-shop",
         title: "Bag Beast Shop",
-        summary: `The man at the shop is an expert in helping you unite with the Bag Beast which best suits you`,
+        summary: `The shopkeeper is an expert in helping you unite with the Bag Beast which best suits you`,
         content: [
           {
             id: "default",
@@ -136,13 +155,14 @@ export default function update({ selected, world }) {
             html: `
             ${shopKeeper + getMainText() + pluginStyleOverride}
             `,
+            submit: adopt,
             buttons: [
-              {
-                text: "Adopt Beast",
-                type: "action",
-                action: craft,
-                disabled: !canCraft,
-              },
+              // {
+              //   text: "Adopt Beast",
+              //   type: "action",
+              //   action: craft,
+              //   disabled: !canCraft,
+              // },
             ],
           },
         ],

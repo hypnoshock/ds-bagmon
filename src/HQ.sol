@@ -28,6 +28,7 @@ struct BeastInfo {
     uint256 beastNum; // Not so important anymore as the bag is the ID
     bytes24 house;
     bytes24 housedBy; // mobileUnit
+    uint24 beastColor;
 }
 // string name; // TODO: leaving out for the minute because decoding string annoying in frontend
 
@@ -48,7 +49,7 @@ contract HQ is BuildingKind {
             ledger = _ledger;
 
             // Make a null entry for entry 0
-            registerBeast(ds.getState(), bytes24(0));
+            registerBeast(ds.getState(), bytes24(0), 0);
         } else {
             console2.log("HQ::Init: Ledger already set");
         }
@@ -59,7 +60,7 @@ contract HQ is BuildingKind {
 
     function use(Game ds, bytes24 buildingInstance, bytes24 mobileUnit, bytes calldata /*payload*/ ) public {}
 
-    function registerBeast(State state, bytes24 mobileUnit) public {
+    function registerBeast(State state, bytes24 mobileUnit, uint24 beastColor) public {
         // Check the player doesn't already have an beast
         uint256 beastIndex = bagToBeastIndex[mobileUnit];
         if (beastIndex > 0) {
@@ -79,7 +80,8 @@ contract HQ is BuildingKind {
                 // name: "",
                 beastNum: beastNum++,
                 house: bytes24(0),
-                housedBy: bytes24(0)
+                housedBy: bytes24(0),
+                beastColor: beastColor
             })
         );
         bagToBeastIndex[mobileUnit] = beasts.length - 1;

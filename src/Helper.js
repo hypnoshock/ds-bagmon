@@ -52,16 +52,18 @@ function decodeState(stateItem) {
   // TODO: Read all 32 bytes. This will currently break after 255 entries
   const numEntries = stateBytes[63];
 
-  //   struct Beast {
+  //   struct BeastInfo {
   //     uint256 index;
   //     bytes24 bag;
   //     BeastState state;
   //     uint256 lastFedBlock;
   //     uint256 bornBlock;
-  //     uint256 beastNum;
+  //     uint256 beastNum; // Not so important anymore as the bag is the ID
   //     bytes24 house;
+  //     bytes24 housedBy; // mobileUnit
+  //     uint24 beastColor;
   // }
-  const structLen = 32 * 8;
+  const structLen = 32 * 9;
   const ledger = [];
   for (var i = 0; i < numEntries; i++) {
     ledger.push({
@@ -109,6 +111,11 @@ function decodeState(stateItem) {
       housedBy: toHexString(
         new Uint8Array(stateBytes.buffer, structLen * i + 32 * 9, 24)
       ),
+      beastColor:
+        "0x" +
+        toHexString(
+          new Uint8Array(stateBytes.buffer, structLen * i + 32 * 10, 32)
+        ).slice(-6),
     });
   }
 
@@ -155,4 +162,20 @@ function toHexString(bytes) {
     return ("0" + (byte & 0xff).toString(16)).slice(-2);
   }).join("");
   return hexString.length > 0 ? "0x" + hexString : "";
+}
+
+function hsv2rgb(h, s, v) {
+  let f = (n, k = (n + h / 60) % 6) =>
+    v - v * s * Math.max(Math.min(k, 4 - k, 1), 0);
+  return [f(5), f(3), f(1)];
+}
+
+// in: r,g,b in [0,1], out: h in [0,360) and s,l in [0,1]
+function rgb2hsl(r, g, b) {
+  let v = Math.max(r, g, b),
+    c = v - Math.min(r, g, b),
+    f = 1 - Math.abs(v + v - c - 1);
+  let h =
+    c && (v == r ? (g - b) / c : v == g ? 2 + (b - r) / c : 4 + (r - g) / c);
+  return [60 * (h < 0 ? h + 6 : h), f ? c / f : 0, (v + v - c) / 2];
 }
