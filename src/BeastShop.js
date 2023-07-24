@@ -112,16 +112,19 @@ export default function update({ selected, world }) {
       let html = "";
       if (playersBeasts.length == 0) {
         html = `
-          <p>We have many beasts at this shop and I can help you find the beast that suits you</p>
-          <p>Select your favourite colour</p>
-          <select id="beastColor" name="beastColor">
-            <option value="0xFF0000">Red</option>
-            <option value="0x00FF00">Green</option>
-            <option value="0x0000FF">Blue</option>
-          </select>
-          <button class="action-button" ${
-            !canCraft ? `disabled` : ``
-          }>Adopt Beast</button>
+          <p>We have many beasts at this shop and I can help you find the beast that suits you.</p></br>
+          <div style="${!canCraft ? `display: none;` : ``}">
+            <h3>Your preferences</h3>
+            <p>Tell me your favourite colour</p>
+            <select id="beastColor" name="beastColor">
+              <option value="0xFF0000">Red</option>
+              <option value="0x00FF00">Green</option>
+              <option value="0x0000FF">Blue</option>
+            </select>
+            <button class="action-button" ${
+              !canCraft ? `disabled` : ``
+            }>Adopt Beast</button>
+          </div>
         `;
       } else {
         html += `<p>You have beast number: ${playersBeasts[0].beastNum}</p>`;
@@ -185,6 +188,11 @@ const pluginStyleOverride = `
   #Layer_1 path {
     fill: #030f25;
   }
+
+  .ingredients:nth-child(4), .process {
+    display: none !important;
+  }
+
 </style>
 `;
 

@@ -93,11 +93,12 @@ export default function update({ selected, world }) {
       if (houseBeasts.length > 0) {
         html += `
         <p>Beast number: ${houseBeasts[0].beastNum}</p>
-        <p>Color: ${houseBeasts[0].beastColor}</p>
-        <p>Beast is ${aliveMins} minutes old</p>
-        <p>Beast was last fed ${lastFedMins} minutes ago</p>
-        ${getBeastGfx(houseBeasts[0], aliveMins, lastFedMins)}
+        <p>They are ${aliveMins} minutes old</p>
+        <p>They were last fed ${lastFedMins} minutes ago</p>
+        ${getBeastGfx(houseBeasts[0], world.block, lastFedMins)}
         `;
+      } else {
+        html += `<p></p>`;
       }
     }
     return html;
@@ -157,6 +158,18 @@ const pluginStyleOverride = `
   .building-image {
     display: none !important;
   }
+
+  .action-button:disabled {
+    display: none;
+  }
+
+  form > div {
+    width: 100%;
+  }
+
+  form > div svg {
+    padding: 0rem 3rem;
+  }
 </style>
 `;
 
@@ -196,11 +209,11 @@ const getBeastStyleOverride = (bagBeast) => {
     </style>`;
 };
 
-const getBeastGfx = (bagBeast, aliveMins, lastFedMins) => {
+const getBeastGfx = (bagBeast, currentBlock, lastFedMins) => {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 132.74 129.97" class="${getHappiness(
     lastFedMins
-  )} ${getIsEating(lastFedMins)}">
+  )} ${getIsEating(bagBeast, currentBlock)}">
   <defs>
     <style>
       #openEyes,

@@ -24,18 +24,20 @@ const getAliveMinutes = (beast, currentBlock) => {
   return Math.floor(((currentBlock - beast.bornBlock) * BLOCK_TIME_SECS) / 60);
 };
 
+const getLastFedSecs = (beast, currentBlock) => {
+  return (currentBlock - beast.lastFedBlock) * BLOCK_TIME_SECS;
+};
+
 const getLastFedMinutes = (beast, currentBlock) => {
-  return Math.floor(
-    ((currentBlock - beast.lastFedBlock) * BLOCK_TIME_SECS) / 60
-  );
+  return Math.floor(getLastFedSecs(beast, currentBlock) / 60);
 };
 
 const getHappiness = (lastFedMins) => {
   return lastFedMins < HUNGER_MINS ? "happy" : "sad";
 };
 
-const getIsEating = (lastFedMins) => {
-  return lastFedMins < 1 ? "isEating" : "";
+const getIsEating = (beast, currentBlock) => {
+  return getLastFedSecs(beast, currentBlock) < 30 ? "isEating" : "";
 };
 
 function decodeState(stateItem) {
