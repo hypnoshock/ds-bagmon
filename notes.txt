@@ -1,3 +1,32 @@
 https://angrytools.com/css/animation/
 
 cat shop-keepers.png | base64 > shop-keepers.png.txt
+
+Bag Beasts base rules
+=====================
+
+- You must feed them 3 times a day
+
+
+Building Ideas
+==============
+
+- Day care
+- Swap shop
+- Card maker
+  - Immortalise the current stats of your beast as a tradeable card. Once the beast's stats have been immortalised, the card cannot be updated
+  - Is a demonstration of a set of rules on top of the Bag Beasts base rules
+
+
+Original Tamagotchi
+===================
+
+Baby lasts about an hour (cannot die)
+Child, Teen, Adult is about 2 to 3 days each
+
+Egg: This stage only lasts a few minutes until the Tamagotchi pet hatches into a baby alien. No care is required during this stage.
+Baby: This stage lasts around an hour. The baby sprite is small and requires the most amount of care. Baby Tamagotchi cannot die.
+Child: This stage lasts from one to three days depending on the Tamagotchi version. The sprite form is usually simple and round.
+Teen: This stage lasts two to three days on average. The sprite grows and obtains appendages. Previous care can affect the appearance in this stage.
+Adult: This is the final stage for most Tamagotchi pets. After a few days as adults, the Tamagotchi can marry and make more Tamagotchi eggs, repeating the cycle.
+Senior: This stage only happens in recent Tamagotchi models. These sprites look older and may have canes. They remain seniors until they pass away.
